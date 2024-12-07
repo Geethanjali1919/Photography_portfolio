@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Photography Portfolio{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+    <header class="header">
+        <nav>
+            <a href="/">Home</a>
+            <a href="/about">About</a>
+            <a href="/services">Services</a>
+            <!-- Check if the user is authenticated, if not redirect to signup -->
+            {% if user.is_authenticated %}
+                <a href="/my_works">My Works</a>
+            {% else %}
+                <a href="/signup">My Works</a>
+            {% endif %}
+            <a href="/contact">Contact</a>
+            {% if user.is_authenticated %}
+                <a href="/logout">Logout</a>
+            {% else %}
+                <a href="/login">Login</a>
+                <a href="/signup">Signup</a>
+            {% endif %}
+        </nav>
+    </header>
+
+    <main>
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2024 Photography Portfolio. All rights reserved.</p>
+    </footer>
+</body>
+</html>

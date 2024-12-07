@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}Contact - Photography Portfolio{% endblock %}
+{% block content %}
+<section class="contact-section" style="padding: 60px 20px; background-color: #f9f9f9; text-align: center;">
+    <h2 style="font-size: 2.5rem; margin-bottom: 20px; color: #333;">Contact Me</h2>
+    <p style="font-size: 1.2rem; color: #666; max-width: 700px; margin: 0 auto 40px; line-height: 1.6;">
+        Have a project in mind or need more information? I'd love to hear from you. Fill out the form below, and I'll get back to you as soon as possible.
+    </p>
+    
+    <form method="POST" style="max-width: 600px; margin: 0 auto; background-color: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1); transition: all 0.3s ease-in-out;">
+        {% csrf_token %}
+        
+        <!-- Name Field -->
+        <div style="margin-bottom: 20px;">
+            <label for="name" style="display: block; font-size: 1.1rem; color: #333; margin-bottom: 5px;">Name</label>
+            <input type="text" name="name" id="name" required 
+                   style="width: 100%; padding: 12px 15px; font-size: 1rem; border: 1px solid #ddd; border-radius: 8px; outline: none; transition: border-color 0.3s ease;">
+        </div>
+
+        <!-- Email Field -->
+        <div style="margin-bottom: 20px;">
+            <label for="email" style="display: block; font-size: 1.1rem; color: #333; margin-bottom: 5px;">Email</label>
+            <input type="email" name="email" id="email" required 
+                   style="width: 100%; padding: 12px 15px; font-size: 1rem; border: 1px solid #ddd; border-radius: 8px; outline: none; transition: border-color 0.3s ease;">
+        </div>
+
+        <!-- Message Field -->
+        <div style="margin-bottom: 20px;">
+            <label for="message" style="display: block; font-size: 1.1rem; color: #333; margin-bottom: 5px;">Message</label>
+            <textarea name="message" id="message" rows="5" required 
+                      style="width: 100%; padding: 12px 15px; font-size: 1rem; border: 1px solid #ddd; border-radius: 8px; outline: none; transition: border-color 0.3s ease;"></textarea>
+        </div>
+        
+        <!-- Submit Button -->
+        <button type="submit" 
+                style="padding: 12px 25px; background-color: #333; color: #fff; font-size: 1.1rem; border: none; border-radius: 8px; cursor: pointer; transition: background-color 0.3s ease;">
+            Send Message
+        </button>
+    </form>
+</section>
+
+{% endblock %}

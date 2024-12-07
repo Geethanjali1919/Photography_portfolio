@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}Services - Photography Portfolio{% endblock %}
+{% block content %}
+{% load static %}
+
+<section class="services-section" style="padding: 60px 20px; background-color: #f9f9f9; text-align: center;">
+    <h2 style="font-size: 2.5rem; margin-bottom: 20px; color: #333;">Services</h2>
+    <p style="font-size: 1.2rem; color: #666; max-width: 700px; margin: 0 auto 40px; line-height: 1.6;">Explore the photography services I offer to meet your unique needs. Each service is designed with the utmost attention to detail and quality.</p>
+    
+    <div class="card-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; padding: 0 20px;">
+        <div class="card" style="background-color: #fff; border-radius: 10px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); transition: transform 0.3s ease; overflow: hidden;">
+            <img src="{% static 'images/service1.jpg' %}" alt="Service Image" style="width: 100%; height: 250px; object-fit: cover; transition: transform 0.3s ease;">
+            <div style="padding: 20px;">
+                <h3 style="font-size: 1.8rem; margin-bottom: 10px; color: #333;">Portrait Photography</h3>
+                <p style="color: #666;">Capture your essence with stunning portraits, highlighting your personality in every shot.</p>
+            </div>
+        </div>
+
+        <div class="card" style="background-color: #fff; border-radius: 10px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); transition: transform 0.3s ease; overflow: hidden;">
+            <img src="{% static 'images/service2.jpg' %}" alt="Service Image" style="width: 100%; height: 250px; object-fit: cover; transition: transform 0.3s ease;">
+            <div style="padding: 20px;">
+                <h3 style="font-size: 1.8rem; margin-bottom: 10px; color: #333;">Event Coverage</h3>
+                <p style="color: #666;">Professional coverage for weddings, parties, corporate events, and more. Let me capture your special moments.</p>
+            </div>
+        </div>
+
+        <div class="card" style="background-color: #fff; border-radius: 10px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); transition: transform 0.3s ease; overflow: hidden;">
+            <img src="{% static 'images/service3.jpg' %}" alt="Service Image" style="width: 100%; height: 250px; object-fit: cover; transition: transform 0.3s ease;">
+            <div style="padding: 20px;">
+                <h3 style="font-size: 1.8rem; margin-bottom: 10px; color: #333;">Commercial Photography</h3>
+                <p style="color: #666;">Enhance your brand's visual appeal with professional product and commercial photos tailored to your needs.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
