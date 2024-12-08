@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
 
       - name: Setup Python
         uses: actions/setup-python@v4
@@ -28,7 +28,7 @@ jobs:
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v4
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   deploy:
@@ -49,6 +49,9 @@ jobs:
           aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws configure set default.region ${{ secrets.AWS_DEFAULT_REGION }}
 
+      - name: Verify AWS Credentials
+        run: |
+          aws sts get-caller-identity
 
       - name: Install Elastic Beanstalk CLI
         run: |
@@ -56,8 +59,8 @@ jobs:
 
       - name: Set Default Environment
         run: |
-          eb init -p python-3.8 my-env-name
-          eb use my-env-name
+          eb init -p python-3.8 my-env-name  # Replace 'my-env-name' with your actual environment name
+          eb use my-env-name  # Replace 'my-env-name' with your actual environment name
 
       - name: Deploy to Elastic Beanstalk
         run: |
