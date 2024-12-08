@@ -34,6 +34,14 @@ jobs:
         env:
           PATH: ${{ runner.temp }}/sonar-scanner/bin:${{ env.PATH }}
           
+      - name: Verify Sonar Scanner Installation
+        run: |
+          echo $PATH
+          which sonar-scanner
+        shell: bash
+        env:
+          PATH: ${{ runner.temp }}/sonar-scanner/bin:${{ env.PATH }}
+          
       - name: SonarQube Analysis
         env:
           SONAR_HOST_URL: "http://localhost:9000"
