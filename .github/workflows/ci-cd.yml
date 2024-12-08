@@ -25,7 +25,8 @@ jobs:
           curl -o sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-windows.zip
           tar -xf sonar-scanner.zip
           mv sonar-scanner-*-windows sonar-scanner
-          echo "::add-path::$(pwd)/sonar-scanner/bin"
+        env:
+          PATH: ${{ runner.temp }}/sonar-scanner/bin:${{ env.PATH }}
           
       - name: SonarQube Analysis
         env:
