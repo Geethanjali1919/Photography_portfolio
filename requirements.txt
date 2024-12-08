@@ -20,7 +20,7 @@ semantic-version==2.10.0
 setuptools==65.5.0
 six==1.17.0
 sqlparse==0.5.1
-termcolor==2.3.0
+termcolor==2.4.0
 tzdata==2024.2
 urllib3==1.26.20
 virtualenv==20.27.0
