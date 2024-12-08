@@ -25,8 +25,8 @@ jobs:
           curl -o sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-windows.zip
           tar -xf sonar-scanner.zip
           mv sonar-scanner-*-windows sonar-scanner
-          setx PATH "%PATH%;%CD%\\sonar-scanner\\bin"
-
+          echo "::add-path::$(pwd)/sonar-scanner/bin"
+          
       - name: SonarQube Analysis
         env:
           SONAR_HOST_URL: "http://localhost:9000"
