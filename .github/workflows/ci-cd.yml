@@ -20,6 +20,11 @@ jobs:
           pip install -r requirements.txt
           pip install pylint
       
+      - name: Install Curl
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl
+
       - name: Install Sonar Scanner
         run: |
           curl -o sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip
