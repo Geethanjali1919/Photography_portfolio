@@ -30,6 +30,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
   deploy:
     needs: sonarqube
     runs-on: ubuntu-latest
@@ -40,6 +41,10 @@ jobs:
       - name: Install Elastic Beanstalk CLI
         run: |
           pip install awsebcli
+
+      - name: Set Default Environment
+        run: |
+          eb use my-env-name  # Replace 'my-env-name' with your actual environment name
 
       - name: Deploy to Elastic Beanstalk
         run: |
