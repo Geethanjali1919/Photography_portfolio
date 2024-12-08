@@ -1,22 +1,20 @@
-name: Main Workflow
+name: CI/CD Pipeline
 on:
   push:
     branches:
       - main
-      - master
-      - develop
-      - 'releases/**'
   pull_request:
     types: [opened, synchronize, reopened]
 
 jobs:
-  sonarqube:
-    runs-on: ubuntu-latest
+  sonar-scan:
+    runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
-
+      
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
@@ -26,25 +24,29 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install pylint
-
+      
+      - name: Install Sonar Scanner
+        run: |
+          curl -o sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-windows.zip
+          tar -xf sonar-scanner.zip
+          mv sonar-scanner-*-windows sonar-scanner
+          setx PATH "%PATH%;%CD%\\sonar-scanner\\bin"
+      
       - name: SonarQube Scan
-        uses: sonarsource/sonarqube-scan-action@v2.1.0
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-        with:
-          projectBaseDir: .
-          args: >
-            -Dsonar.python.coverage.reportPaths=coverage.xml
-            -Dsonar.tests=tests/
-            -Dsonar.verbose=true
-
+        run: |
+          sonar-scanner \
+            -Dsonar.projectKey=photography_portfolio \
+            -Dsonar.organization=default \
+            -Dsonar.sources=. \
+            -Dsonar.host.url=http://localhost:9000 \
+            -Dsonar.login=${{ secrets.SONARQUBE_TOKEN }}
+          
   deploy:
-    needs: sonarqube
-    runs-on: ubuntu-latest
+    needs: sonar-scan
+    runs-on: windows-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
       
       - name: Deploy to Elastic Beanstalk
         run: |
