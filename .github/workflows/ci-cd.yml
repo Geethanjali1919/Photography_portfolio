@@ -20,13 +20,13 @@ jobs:
           pip install -r requirements.txt
           pip install pylint
 
-      - name: Install Curl
+      - name: Install Wget
         run: |
-          brew install curl
+          brew install wget
 
       - name: Install Sonar Scanner
         run: |
-          curl -o sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-macosx.zip
+          wget -O sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-macosx.zip
           unzip sonar-scanner.zip
           mv sonar-scanner-*-macosx sonar-scanner
         shell: bash
