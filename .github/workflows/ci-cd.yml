@@ -55,7 +55,8 @@ jobs:
 
       - name: Set Default Environment
         run: |
-          eb use my-env-name  # Replace 'my-env-name' with your actual environment name
+          eb init -p python-3.8 my-env-name
+          eb use my-env-name
 
       - name: Deploy to Elastic Beanstalk
         run: |
