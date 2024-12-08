@@ -1,20 +1,19 @@
-name: CI/CD Pipeline
+name: Build
+
 on:
   push:
     branches:
       - main
-  pull_request:
-    types: [opened, synchronize, reopened]
 
 jobs:
-  sonarqube:
-    name: SonarQube Integration
+  build:
+    name: Build and analyze
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
 
       - name: Setup Python
         uses: actions/setup-python@v4
@@ -27,25 +26,25 @@ jobs:
           pip install pylint
 
       - name: SonarQube Scan
-        uses: sonarsource/sonarqube-scan-action@master
+        uses: sonarsource/sonarqube-scan-action@v4
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-        with:
-          projectBaseDir: .
-          args: >
-            -Dsonar.projectKey=photography_portfolio
-            -Dsonar.organization=default
-            -Dsonar.sources=.
-            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }}
-            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+
+      # If you wish to fail your job when the Quality Gate is red, uncomment the
+      # following lines. This would typically be used to fail a deployment.
+      # - name: SonarQube Quality Gate
+      #   uses: sonarsource/sonarqube-quality-gate-action@v1
+      #   timeout-minutes: 5
+      #   env:
+      #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   deploy:
-    needs: sonarqube
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       
       - name: Deploy to Elastic Beanstalk
         run: |
