@@ -1,15 +1,22 @@
-name: CI/CD Pipeline
+name: Main Workflow
 on:
   push:
     branches:
       - main
+      - master
+      - develop
+      - 'releases/**'
+  pull_request:
+    types: [opened, synchronize, reopened]
+
 jobs:
-  sonar-scan:
-    runs-on: macos-latest
+  sonarqube:
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-      
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
@@ -20,41 +27,24 @@ jobs:
           pip install -r requirements.txt
           pip install pylint
 
-      - name: Install Wget
-        run: |
-          brew install wget
+      - name: SonarQube Scan
+        uses: sonarsource/sonarqube-scan-action@v2.1.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+        with:
+          projectBaseDir: .
+          args: >
+            -Dsonar.python.coverage.reportPaths=coverage.xml
+            -Dsonar.tests=tests/
+            -Dsonar.verbose=true
 
-      - name: Install Sonar Scanner
-        run: |
-          wget -O sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-macosx.zip
-          unzip sonar-scanner.zip
-          mv sonar-scanner-*-macosx sonar-scanner
-        shell: bash
-        env:
-          PATH: ${{ runner.temp }}/sonar-scanner/bin:${{ env.PATH }}
-          
-      - name: Verify Sonar Scanner Installation
-        run: |
-          echo $PATH
-          which sonar-scanner
-        shell: bash
-        env:
-          PATH: ${{ runner.temp }}/sonar-scanner/bin:${{ env.PATH }}
-          
-      - name: SonarQube Analysis
-        env:
-          SONAR_HOST_URL: "http://localhost:9000"
-          SONAR_LOGIN: ${{ secrets.SONAR_TOKEN }}
-          PATH: ${{ runner.temp }}/sonar-scanner/bin:${{ env.PATH }}
-        run: |
-          sonar-scanner
-          
   deploy:
-    needs: sonar-scan
-    runs-on: macos-latest
+    needs: sonarqube
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       
       - name: Deploy to Elastic Beanstalk
         run: |
