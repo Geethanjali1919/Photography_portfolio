@@ -22,9 +22,10 @@ jobs:
       
       - name: Install Sonar Scanner
         run: |
-          curl -o sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-windows.zip
+          Invoke-WebRequest -Uri https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-windows.zip -OutFile sonar-scanner.zip
           tar -xf sonar-scanner.zip
           mv sonar-scanner-*-windows sonar-scanner
+        shell: pwsh
         env:
           PATH: ${{ runner.temp }}/sonar-scanner/bin:${{ env.PATH }}
           
