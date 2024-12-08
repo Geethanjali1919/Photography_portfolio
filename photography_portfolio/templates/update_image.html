@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}Update Image{% endblock %}
+{% block content %}
+<section class="update-section">
+    <h2>Update Image</h2>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <label for="title">Title:</label>
+        <input type="text" name="title" id="title" value="{{ image.title }}" required>
+        <label for="image">Replace Image (optional):</label>
+        <input type="file" name="image" id="image">
+        <label for="description">Description:</label>
+        <textarea name="description" id="description" required>{{ image.description }}</textarea>
+        <button type="submit">Update</button>
+    </form>
+</section>
+{% endblock %}

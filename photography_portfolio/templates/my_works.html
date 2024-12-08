@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}My Works - Photography Portfolio{% endblock %}
+{% block content %}
+<section class="works-section">
+    <h2>My Works</h2>
+    <a href="{% url 'upload_image' %}" class="button">Add New Image</a>
+    <div class="card-grid">
+        {% for image in images %}
+        <div class="card">
+            <img src="{{ image.image.url }}" alt="{{ image.title }}" class="card-image">
+            <div class="card-content">
+                <h3>{{ image.title }}</h3>
+                <p>{{ image.description }}</p>
+            </div>
+            <div class="card-actions">
+                <a href="{% url 'update_image' image.id %}" class="button">Edit</a>
+                <a href="{% url 'delete_image' image.id %}" class="button delete-button">Delete</a>
+            </div>
+        </div>
+        {% endfor %}
+        {% if images|length == 0 %}
+        <p>No images uploaded yet. Start by adding your work!</p>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

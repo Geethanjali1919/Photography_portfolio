@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}Login - Photography Portfolio{% endblock %}
+{% block content %}
+
+<section class="login-section" style="display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f4f7fc; padding: 20px;">
+    <div class="login-card" style="background: white; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); padding: 40px; border-radius: 10px; max-width: 400px; width: 100%;">
+        <h2 style="text-align: center; font-size: 2rem; margin-bottom: 20px; color: #333;">Login</h2>
+
+        {% if messages %}
+        <div style="margin-bottom: 20px;">
+            {% for message in messages %}
+            <p style="padding: 10px; border-radius: 5px; 
+                      {% if message.tags == 'error' %}
+                          background-color: #f8d7da; color: #842029; border: 1px solid #f5c2c7;
+                      {% elif message.tags == 'success' %}
+                          background-color: #d1e7dd; color: #0f5132; border: 1px solid #badbcc;
+                      {% endif %}">
+                {{ message }}
+            </p>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="POST" style="display: flex; flex-direction: column; gap: 20px;">
+            {% csrf_token %}
+            <label for="username" style="font-size: 1rem; color: #333;">Username</label>
+            <input type="text" name="username" id="username" required 
+                aria-label="Enter your username" placeholder="Enter your username"
+                style="padding: 10px; font-size: 1rem; border: 1px solid #ccc; border-radius: 5px; outline: none; transition: border 0.3s ease;">
+            
+            <label for="password" style="font-size: 1rem; color: #333;">Password</label>
+            <input type="password" name="password" id="password" required 
+                aria-label="Enter your password" placeholder="Enter your password"
+                style="padding: 10px; font-size: 1rem; border: 1px solid #ccc; border-radius: 5px; outline: none; transition: border 0.3s ease;">
+            
+            <button type="submit" class="button" 
+                style="background-color: #007BFF; color: white; padding: 12px 20px; font-size: 1.1rem; border-radius: 5px; border: none; cursor: pointer; transition: background-color 0.3s ease;"
+                onmouseover="this.style.backgroundColor='#0056b3'" onmouseout="this.style.backgroundColor='#007BFF'">
+                Login
+            </button>
+        </form>
+
+        <div style="text-align: center; margin-top: 10px;">
+            <a href="/forgot_password" style="color: #007BFF; text-decoration: none; font-size: 0.9rem;">Forgot Password?</a>
+        </div>
+
+        <div style="text-align: center; margin-top: 15px;">
+            <p style="font-size: 0.9rem; color: #666;">Don't have an account? <a href="/signup" style="color: #007BFF; text-decoration: none;">Sign up here</a></p>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
