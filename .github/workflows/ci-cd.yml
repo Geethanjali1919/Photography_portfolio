@@ -1,0 +1,34 @@
+name: CI/CD Pipeline
+on:
+  push:
+    branches:
+      - main
+jobs:
+  sonar-scan:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+      - name: Install Dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pylint
+      - name: SonarQube Analysis
+        env:
+          SONAR_HOST_URL: "http://localhost:9000"
+          SONAR_LOGIN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          sonar-scanner
+  deploy:
+    needs: sonar-scan
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+      - name: Deploy to Elastic Beanstalk
+        run: |
+          eb deploy
