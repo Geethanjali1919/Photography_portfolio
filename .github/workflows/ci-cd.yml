@@ -27,6 +27,14 @@ jobs:
           mv sonar-scanner-*-windows sonar-scanner
         shell: pwsh
           
+      - name: Verify Sonar Scanner Installation
+        run: |
+          echo $env:PATH
+          Get-Command sonar-scanner
+        shell: pwsh
+        env:
+          PATH: ${{ runner.temp }}/sonar-scanner/bin:${{ env.PATH }}
+          
       - name: SonarQube Analysis
         env:
           SONAR_HOST_URL: "http://localhost:9000"
