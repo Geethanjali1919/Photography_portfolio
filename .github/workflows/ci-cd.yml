@@ -5,7 +5,7 @@ on:
       - main
 jobs:
   sonar-scan:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -22,16 +22,9 @@ jobs:
       
       - name: Install Sonar Scanner
         run: |
-          Invoke-WebRequest -Uri https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-windows.zip -OutFile sonar-scanner.zip
-          Expand-Archive -Path sonar-scanner.zip -DestinationPath .
-          mv sonar-scanner-*-windows sonar-scanner
-        shell: pwsh
-          
-      - name: Verify Sonar Scanner Installation
-        run: |
-          echo $env:PATH
-          Get-Command sonar-scanner
-        shell: pwsh
+          curl -o sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip
+          unzip sonar-scanner.zip
+          mv sonar-scanner-*-linux sonar-scanner
         env:
           PATH: ${{ runner.temp }}/sonar-scanner/bin:${{ env.PATH }}
           
@@ -45,7 +38,7 @@ jobs:
           
   deploy:
     needs: sonar-scan
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
