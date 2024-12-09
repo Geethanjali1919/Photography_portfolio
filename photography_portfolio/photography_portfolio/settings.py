@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-hz4938_tc7p_0a=*+!3w)030!o(d4*6_imeycl1=rs&p7za)1s
 DEBUG = True
 
  
-ALLOWED_HOSTS = ['.elasticbeanstalk.com', 'localhost']
+ALLOWED_HOSTS = ['.elasticbeanstalk.com', 'localhost','ec2-18-215-173-174.compute-1.amazonaws.com']
 
 
 # Application definition
