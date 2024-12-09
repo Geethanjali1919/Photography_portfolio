@@ -1,4 +1,5 @@
-name: CI/CD Pipeline
+name: Build and Deploy
+
 on:
   push:
     branches:
@@ -12,69 +13,74 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
-      
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Disable shallow clone for better analysis
+
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.8'
+
       - name: Install Dependencies
         run: |
           pip install -r requirements.txt
           pip install pylint
-      
-      - name: Install Sonar Scanner
-        run: |
-          Invoke-WebRequest -Uri https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-windows.zip -OutFile sonar-scanner.zip
-          tar -xf sonar-scanner.zip
-          mv sonar-scanner-*-windows sonar-scanner
-        shell: pwsh
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v4
         env:
-          PATH: ${{ runner.temp }}/sonar-scanner/bin:${{ env.PATH }}
-          
-      - name: SonarQube Analysis
-        env:
-          SONAR_HOST_URL: "http://localhost:9000"
-          SONAR_LOGIN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          sonar-scanner
-          
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed for PR info
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
   deploy:
     needs: sonarqube
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
-      
-      - name: Deploy to Elastic Beanstalk
+        uses: actions/checkout@v4
+
+      - name: Install AWS CLI
         run: |
-          # Write the SSH key to a file
-          echo "$EC2_SSH_KEY" > ssh_key.pem
-          chmod 600 ssh_key.pem
+          sudo apt-get update
+          sudo apt-get install -y awscli
 
-          # Deploy the application
-          echo "Copying deployment package to EC2..."
-          scp -i ssh_key.pem -o StrictHostKeyChecking=no deploy.zip $EC2_USERNAME@$EC2_HOST:~/
+      - name: Configure AWS CLI
+        run: |
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws configure set default.region ${{ secrets.AWS_DEFAULT_REGION }}
 
-          # Execute deployment commands on EC2
-          ssh -i ssh_key.pem -o StrictHostKeyChecking=no $EC2_USERNAME@$EC2_HOST '
-            echo "Cleaning up old deployment..."
-            rm -rf ~/app/*
-            
-            echo "Unzipping new deployment..."
-            unzip -o ~/deploy.zip -d ~/app/
-            
-            echo "Installing dependencies..."
-            cd ~/app
-            source venv/bin/activate
-            pip install -r requirements.txt
-            
-            echo "Restarting application service..."
-            sudo systemctl restart your-app
-            
-            echo "Cleaning up..."
-            rm ~/deploy.zip
-          '
+      - name: Verify AWS Credentials
+        run: |
+          aws sts get-caller-identity
 
-          # Clean up local SSH key
-          rm ssh_key.pem
+      - name: Transfer Files to EC2
+        run: |
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r * ubuntu@${{ secrets.EC2_PUBLIC_IP }}:/home/ubuntu/project/
+
+      - name: SSH into EC2 and Deploy
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
+          # Navigate to the project directory
+          cd /home/ubuntu/project
+
+          # Set up a virtual environment
+          python3 -m venv venv
+          source venv/bin/activate
+
+          # Install dependencies
+          pip install -r requirements.txt
+
+          # Collect static files and apply migrations
+          python manage.py collectstatic --noinput
+          python manage.py migrate
+
+          # Restart Gunicorn and Nginx
+          sudo systemctl restart gunicorn
+          sudo systemctl restart nginx
+          EOF
+
+      - name: Post-Deployment Health Check
+        run: |
+          curl -f http://${{ secrets.EC2_PUBLIC_IP }} || exit 1
