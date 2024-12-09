@@ -76,13 +76,13 @@ jobs:
             unzip -o ~/deploy.zip -d ~/app/
 
             echo "Verifying deployment package..."
-            if [ ! -f ~/app/manage.py ]; then
-              echo "Error: manage.py not found in ~/app/"
+            if [ ! -f ~/app/photography_portfolio/manage.py ]; then
+              echo "Error: manage.py not found in ~/app/photography_portfolio/"
               exit 1
             fi
             
             echo "Setting up virtual environment..."
-            cd ~/app
+            cd ~/app/photography_portfolio
             python3 -m venv venv
             source venv/bin/activate
             
@@ -94,7 +94,7 @@ jobs:
             
             echo "Starting Django application..."
             nohup python manage.py runserver 0.0.0.0:8000 &
-
+            
             echo "Cleaning up deployment package..."
             rm ~/deploy.zip
           '
