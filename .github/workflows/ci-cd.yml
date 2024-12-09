@@ -44,7 +44,6 @@ jobs:
       - name: Create deployment package
         run: |
           zip -r deploy.zip . -x ".git" ".pytest_cache" "pycache/" ".zip"
-
       - name: Deploy to EC2
         env:
           EC2_HOST: ${{ secrets.EC2_HOST }}
@@ -66,11 +65,15 @@ jobs:
             
             echo "Installing dependencies..."
             cd ~/app
+            python3 -m venv venv
             source venv/bin/activate
             pip install -r requirements.txt
             
-            echo "Restarting application service..."
-            sudo systemctl restart your-app
+            echo "Running Django application..."
+            cd ~/app
+            source venv/bin/activate
+            python manage.py migrate
+            nohup python manage.py runserver 0.0.0.0:8000 &
             
             echo "Cleaning up..."
             rm ~/deploy.zip
