@@ -1,4 +1,4 @@
-name: Build and Deploy
+name: Build
 
 on:
   push:
@@ -12,25 +12,26 @@ jobs:
     name: SonarQube
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Disable shallow clone for better analysis
-
+          fetch-depth: 0
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.8'
-
       - name: Install Dependencies
         run: |
           pip install -r requirements.txt
           pip install pylint
-
+      - name: Setup SonarQube Scanner
+        run: |
+          wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip
+          unzip sonar-scanner-cli-4.8.0.2856-linux.zip
+          mv sonar-scanner-4.8.0.2856-linux sonar-scanner
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v4
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed for PR info
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   deploy:
@@ -40,47 +41,45 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Install AWS CLI
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+
+      - name: Create deployment package
         run: |
-          sudo apt-get update
-          sudo apt-get install -y awscli
+          zip -r deploy.zip . -x ".git" ".pytest_cache" "_pycache_/" ".zip"
 
-      - name: Configure AWS CLI
+      - name: Deploy to EC2
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
         run: |
-          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws configure set default.region ${{ secrets.AWS_DEFAULT_REGION }}
-
-      - name: Verify AWS Credentials
-        run: |
-          aws sts get-caller-identity
-
-      - name: Transfer Files to EC2
-        run: |
-          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r * ubuntu@${{ secrets.EC2_PUBLIC_IP }}:/home/ubuntu/project/
-
-      - name: SSH into EC2 and Deploy
-        run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
-          # Navigate to the project directory
-          cd /home/ubuntu/project
-
-          # Set up a virtual environment
-          python3 -m venv venv
-          source venv/bin/activate
-
-          # Install dependencies
-          pip install -r requirements.txt
-
-          # Collect static files and apply migrations
-          python manage.py collectstatic --noinput
-          python manage.py migrate
-
-          # Restart Gunicorn and Nginx
-          sudo systemctl restart gunicorn
-          sudo systemctl restart nginx
-          EOF
-
-      - name: Post-Deployment Health Check
-        run: |
-          curl -f http://${{ secrets.EC2_PUBLIC_IP }} || exit 1
+          echo "$EC2_SSH_KEY" > ssh_key.pem
+          chmod 600 ssh_key.pem
+          
+          echo "Copying deployment package to EC2..."
+          scp -i ssh_key.pem -o StrictHostKeyChecking=no deploy.zip $EC2_USERNAME@$EC2_HOST:~/
+          
+          ssh -i ssh_key.pem -o StrictHostKeyChecking=no $EC2_USERNAME@$EC2_HOST '
+            echo "Cleaning up old deployment..."
+            rm -rf ~/app/*
+            
+            echo "Unzipping new deployment..."
+            unzip -o ~/deploy.zip -d ~/app/
+            
+            echo "Installing dependencies..."
+            cd ~/app
+            source venv/bin/activate
+            pip install -r requirements.txt
+            
+            echo "Restarting application service..."
+            sudo systemctl restart your-app
+            
+            echo "Cleaning up..."
+            rm ~/deploy.zip
+          '
+          rm ssh_key.pem
