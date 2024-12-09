@@ -1,4 +1,4 @@
-name: Build
+name: Build and Deploy Django App
 
 on:
   push:
@@ -6,6 +6,7 @@ on:
       - main
   pull_request:
     types: [opened, synchronize, reopened]
+
 jobs:
   sonarqube:
     name: SonarQube
@@ -40,9 +41,14 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Create deployment package
+      - name: Install Deployment Tools
         run: |
-          zip -r deploy.zip . -x ".git" ".pytest_cache" "pycache/" ".zip"
+          sudo apt-get update
+          sudo apt-get install -y unzip python3-venv libjpeg-dev zlib1g-dev python3-pip build-essential
+
+      - name: Create Deployment Package
+        run: |
+          zip -r deploy.zip . -x ".git/*" ".pytest_cache/*" "__pycache__/*" "*.zip"
 
       - name: Deploy to EC2
         env:
@@ -55,34 +61,43 @@ jobs:
           chmod 600 ssh_key.pem
           
           # Copy deployment package to EC2
-          echo "Copying deployment package to EC2..."
           scp -i ssh_key.pem -o StrictHostKeyChecking=no deploy.zip $EC2_USERNAME@$EC2_HOST:~/
           
           # SSH into EC2 and deploy
           ssh -i ssh_key.pem -o StrictHostKeyChecking=no $EC2_USERNAME@$EC2_HOST '
+            echo "Installing required libraries..."
+            sudo apt-get update && sudo apt-get install -y unzip python3-venv libjpeg-dev zlib1g-dev python3-pip build-essential
+            
             echo "Cleaning up old deployment..."
             rm -rf ~/app/*
             
             echo "Unzipping new deployment..."
             unzip -o ~/deploy.zip -d ~/app/
+
+            echo "Verifying deployment package..."
+            if [ ! -f ~/app/photography_portfolio/manage.py ]; then
+              echo "Error: manage.py not found in ~/app/photography_portfolio/"
+              exit 1
+            fi
             
             echo "Setting up virtual environment..."
-            cd ~/app
+            cd ~/app/photography_portfolio
             python3 -m venv venv
             source venv/bin/activate
-            pip install -r requirements.txt
             
-            echo "Restarting application service..."
-            sudo systemctl restart your-app
+            echo "Installing dependencies..."
+            pip install --no-cache-dir -r requirements.txt
+            
+            echo "Applying database migrations..."
+            source venv/bin/activate
+            python manage.py migrate
             
             echo "Starting Django application..."
-            nohup python manage.py runserver 0.0.0.0:8000 &
-
+            nohup python manage.py runserver 0.0.0.0:8000 > django.log 2>&1 &
+            
             echo "Cleaning up deployment package..."
             rm ~/deploy.zip
           '
           
           # Clean up local SSH key file
           rm ssh_key.pem
-          
-          
