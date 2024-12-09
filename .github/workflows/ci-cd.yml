@@ -74,6 +74,12 @@ jobs:
             
             echo "Unzipping new deployment..."
             unzip -o ~/deploy.zip -d ~/app/
+
+            echo "Verifying deployment package..."
+            if [ ! -f ~/app/manage.py ]; then
+              echo "Error: manage.py not found in ~/app/"
+              exit 1
+            fi
             
             echo "Setting up virtual environment..."
             cd ~/app
