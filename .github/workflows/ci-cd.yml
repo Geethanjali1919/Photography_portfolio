@@ -1,48 +1,85 @@
-name: CI/CD Pipeline
+name: Build
+
 on:
   push:
     branches:
       - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+
 jobs:
-  sonar-scan:
-    runs-on: windows-latest
+  sonarqube:
+    name: SonarQube
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-      
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.8'
-
       - name: Install Dependencies
         run: |
           pip install -r requirements.txt
           pip install pylint
-      
-      - name: Install Sonar Scanner
-        run: |
-          Invoke-WebRequest -Uri https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-windows.zip -OutFile sonar-scanner.zip
-          tar -xf sonar-scanner.zip
-          mv sonar-scanner-*-windows sonar-scanner
-        shell: pwsh
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v4
         env:
-          PATH: ${{ runner.temp }}/sonar-scanner/bin:${{ env.PATH }}
-          
-      - name: SonarQube Analysis
-        env:
-          SONAR_HOST_URL: "http://localhost:9000"
-          SONAR_LOGIN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          sonar-scanner
-          
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
   deploy:
-    needs: sonar-scan
-    runs-on: windows-latest
+    needs: sonarqube
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
-      
-      - name: Deploy to Elastic Beanstalk
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+
+      - name: Create deployment package
         run: |
-          eb deploy
+          zip -r deploy.zip . -x ".git" ".pytest_cache" "_pycache_/" ".zip"
+
+      - name: Deploy to EC2
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+        run: |
+          # Write the SSH key to a file
+          echo "$EC2_SSH_KEY" > ssh_key.pem
+          chmod 600 ssh_key.pem
+
+          # Deploy the application
+          echo "Copying deployment package to EC2..."
+          scp -i ssh_key.pem -o StrictHostKeyChecking=no deploy.zip $EC2_USERNAME@$EC2_HOST:~/
+
+          # Execute deployment commands on EC2
+          ssh -i ssh_key.pem -o StrictHostKeyChecking=no $EC2_USERNAME@$EC2_HOST '
+            echo "Cleaning up old deployment..."
+            rm -rf ~/app/*
+            
+            echo "Unzipping new deployment..."
+            unzip -o ~/deploy.zip -d ~/app/
+            
+            echo "Installing dependencies..."
+            cd ~/app
+            source venv/bin/activate
+            pip install -r requirements.txt
+            
+            echo "Restarting application service..."
+            sudo systemctl restart your-app
+            
+            echo "Cleaning up..."
+            rm ~/deploy.zip
+          '
+
+          # Clean up local SSH key
+          rm ssh_key.pem
