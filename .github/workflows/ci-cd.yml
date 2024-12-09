@@ -93,7 +93,7 @@ jobs:
             python manage.py migrate
             
             echo "Starting Django application..."
-            nohup python manage.py runserver 0.0.0.0:8000 &
+            nohup python manage.py runserver 0.0.0.0:8000 > django.log 2>&1 &
             
             echo "Cleaning up deployment package..."
             rm ~/deploy.zip
