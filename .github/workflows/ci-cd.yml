@@ -1,4 +1,4 @@
-name: Build
+name: Build and Deploy Django App
 
 on:
   push:
@@ -6,6 +6,7 @@ on:
       - main
   pull_request:
     types: [opened, synchronize, reopened]
+
 jobs:
   sonarqube:
     name: SonarQube
@@ -40,9 +41,14 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Create deployment package
+      - name: Install Deployment Tools
         run: |
-          zip -r deploy.zip . -x ".git" ".pytest_cache" "pycache/" ".zip"
+          sudo apt-get update
+          sudo apt-get install -y unzip python3-venv
+
+      - name: Create Deployment Package
+        run: |
+          zip -r deploy.zip . -x ".git/*" ".pytest_cache/*" "__pycache__/*" "*.zip"
 
       - name: Deploy to EC2
         env:
@@ -60,6 +66,9 @@ jobs:
           
           # SSH into EC2 and deploy
           ssh -i ssh_key.pem -o StrictHostKeyChecking=no $EC2_USERNAME@$EC2_HOST '
+            echo "Installing required libraries..."
+            sudo apt-get update && sudo apt-get install -y unzip python3-venv libjpeg-dev zlib1g-dev python3-pip build-essential
+            
             echo "Cleaning up old deployment..."
             rm -rf ~/app/*
             
@@ -70,10 +79,12 @@ jobs:
             cd ~/app
             python3 -m venv venv
             source venv/bin/activate
+            
+            echo "Installing dependencies..."
             pip install -r requirements.txt
             
-            echo "Restarting application service..."
-            sudo systemctl restart your-app
+            echo "Applying database migrations..."
+            python manage.py migrate
             
             echo "Starting Django application..."
             nohup python manage.py runserver 0.0.0.0:8000 &
@@ -84,5 +95,3 @@ jobs:
           
           # Clean up local SSH key file
           rm ssh_key.pem
-          
-          
