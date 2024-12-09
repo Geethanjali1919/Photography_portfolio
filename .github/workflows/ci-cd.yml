@@ -89,6 +89,7 @@ jobs:
             pip install --no-cache-dir -r requirements.txt
             
             echo "Applying database migrations..."
+            source venv/bin/activate
             python manage.py migrate
             
             echo "Starting Django application..."
