@@ -66,8 +66,8 @@ jobs:
           
           # SSH into EC2 and deploy
           ssh -i ssh_key.pem -o StrictHostKeyChecking=no $EC2_USERNAME@$EC2_HOST '
-            echo "Installing unzip if missing..."
-            sudo apt-get update && sudo apt-get install -y unzip python3-venv
+            echo "Installing required libraries..."
+            sudo apt-get update && sudo apt-get install -y unzip python3-venv libjpeg-dev zlib1g-dev python3-pip build-essential
             
             echo "Cleaning up old deployment..."
             rm -rf ~/app/*
@@ -88,7 +88,7 @@ jobs:
             
             echo "Starting Django application..."
             nohup python manage.py runserver 0.0.0.0:8000 &
-            
+
             echo "Cleaning up deployment package..."
             rm ~/deploy.zip
           '
