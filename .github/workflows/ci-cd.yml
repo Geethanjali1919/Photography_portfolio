@@ -1,4 +1,5 @@
 name: Build
+
 on:
   push:
     branches:
@@ -38,26 +39,27 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+
       - name: Create deployment package
         run: |
           zip -r deploy.zip . -x ".git" ".pytest_cache" "pycache/" ".zip"
+
       - name: Deploy to EC2
         env:
           EC2_HOST: ${{ secrets.EC2_HOST }}
           EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
           EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
         run: |
+          # Create SSH key file
           echo "$EC2_SSH_KEY" > ssh_key.pem
           chmod 600 ssh_key.pem
           
+          # Copy deployment package to EC2
           echo "Copying deployment package to EC2..."
           scp -i ssh_key.pem -o StrictHostKeyChecking=no deploy.zip $EC2_USERNAME@$EC2_HOST:~/
           
+          # SSH into EC2 and deploy
           ssh -i ssh_key.pem -o StrictHostKeyChecking=no $EC2_USERNAME@$EC2_HOST '
-            echo "Installing system dependencies..."
-            sudo apt-get update
-            sudo apt-get install -y python3-dev default-libmysqlclient-dev build-essential pkg-config libjpeg-dev zlib1g-dev
-            
             echo "Cleaning up old deployment..."
             rm -rf ~/app/*
             
@@ -68,65 +70,19 @@ jobs:
             cd ~/app
             python3 -m venv venv
             source venv/bin/activate
+            pip install -r requirements.txt
             
-            echo "Installing dependencies..."
-            pip install --upgrade pip
-            pip install -r photography_portfolio/requirements.txt
-            
-            echo "Applying migrations..."
-            cd photography_portfolio
-            python manage.py migrate
-            python manage.py collectstatic --noinput
-            
-            echo "Updating service file..."
-            sudo tee /etc/systemd/system/your-app.service << EOL
-[Unit]
-Description=Django Application
-After=network.target
-
-[Service]
-User=ubuntu
-Group=www-data
-WorkingDirectory=/home/ubuntu/app/photography_portfolio
-Environment="PATH=/home/ubuntu/app/venv/bin"
-ExecStart=/home/ubuntu/app/venv/bin/gunicorn --workers 3 --bind unix:/run/gunicorn.sock photography_portfolio.wsgi:application
-
-[Install]
-WantedBy=multi-user.target
-EOL
-
-            echo "Configuring Nginx..."
-            sudo tee /etc/nginx/sites-available/your-app << EOL
-server {
-    listen 80;
-    server_name $EC2_HOST;
-
-    location = /favicon.ico { access_log off; log_not_found off; }
-    
-    location /static/ {
-        root /home/ubuntu/app/photography_portfolio;
-    }
-
-    location /media/ {
-        root /home/ubuntu/app/photography_portfolio;
-    }
-
-    location / {
-        include proxy_params;
-        proxy_pass http://unix:/run/gunicorn.sock;
-    }
-}
-EOL
-
-            sudo ln -sf /etc/nginx/sites-available/your-app /etc/nginx/sites-enabled/
-            sudo rm -f /etc/nginx/sites-enabled/default
-            
-            echo "Restarting services..."
-            sudo systemctl daemon-reload
+            echo "Restarting application service..."
             sudo systemctl restart your-app
-            sudo systemctl restart nginx
             
-            echo "Cleaning up..."
+            echo "Starting Django application..."
+            nohup python manage.py runserver 0.0.0.0:8000 &
+
+            echo "Cleaning up deployment package..."
             rm ~/deploy.zip
           '
+          
+          # Clean up local SSH key file
           rm ssh_key.pem
+          
+          
